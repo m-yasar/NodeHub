@@ -1,0 +1,25 @@
+# ESP-IDF
+build/
+sdkconfig.old
+managed_components/
+dependencies.lock
+*.bin
+*.elf
+*.map
+
+# Editör / IDE
+.vscode/
+.idea/
+*.code-workspace
+compile_commands.json
+.cache/
+
+# Gizli bilgiler — WiFi parolası, broker kimlik bilgileri buraya
+secrets.h
+*.local
+.env
+
+# İşletim sistemi
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,10 @@
+# NodeHub — Modbus register sözleşmesi
+#
+# ⏳ Henüz doldurulmadı — yol haritasında Adım 2.
+#
+# Bu dosya sözleşmenin makine-okunur hâlidir. Buradan hem node için C header,
+# hem hub için okuma tablosu üretilir. Sözleşme değişince ikisi de tek adımda güncellenir.
+#
+# Açıklaması: docs/modbus-sozlesmesi.md
+
+version: 0
