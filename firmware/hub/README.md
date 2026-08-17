@@ -8,7 +8,13 @@ ESP32. Node'lardan RS485/Modbus RTU ile veri toplar, MQTT ile sunucuya gönderir
 
 | Proje | İçerik |
 |---|---|
-| `nodehub_mqtt_datasender` | Adım 1 — ESP32-C3, butona basınca MQTT publish |
+| [`NodeHub_MQTT_DataSender`](NodeHub_MQTT_DataSender/) | Adım 1 — ESP32-C3, BOOT butonuna basınca MQTT publish |
+
+## Köken
+
+Bu proje ESP-IDF'in `protocols/mqtt/ssl` örneğinden başlatıldı
+(Espressif Systems, Unlicense / CC0-1.0). Buton tetiklemeli yayın, sayaçlı yük ve
+NodeHub'a özgü yapılandırma sonradan eklendi.
 
 ## Hub'a driver eklenmez
 
