@@ -1,10 +1,174 @@
 # NodeHub — Modbus register sözleşmesi
 #
-# ⏳ Henüz doldurulmadı — yol haritasında Adım 2.
+# Sözleşmenin makine tarafından okunan hâli. İnsan tarafı: docs/modbus-sozlesmesi.md
 #
-# Bu dosya sözleşmenin makine-okunur hâlidir. Buradan hem node için C header,
-# hem hub için okuma tablosu üretilir. Sözleşme değişince ikisi de tek adımda güncellenir.
+# Buradan üretilir:
+#   - node için C header (offset sabitleri)
+#   - hub için okuma tablosu
+#   - mobil uygulama için tip listesi
 #
-# Açıklaması: docs/modbus-sozlesmesi.md
+# Bu dosya değiştiğinde üçü birden yeniden üretilir. Tek kaynak burasıdır.
 
-version: 0
+surum: 1
+
+# --------------------------------------------------------------------
+# Hat ayarları
+# --------------------------------------------------------------------
+
+hat:
+  hiz: 19200
+  cerceve: 8N1                # 8 veri biti, eşlik yok, 1 durdurma biti
+  okuma_fk: 3                 # holding register okuma
+  yazma_fk: 16                # çoklu register yazma
+  en_fazla_register: 24       # tek okumada
+
+# 16 bitten büyük değerler işlemcinin bellek düzeninde taşınır.
+# Hub ve node'un ikisi de little-endian olduğu için dönüşüm yapılmaz.
+bayt_sirasi: little-endian
+
+# --------------------------------------------------------------------
+# CRC
+#
+# Standart Modbus RTU CRC'si. Hatta ÖNCE DÜŞÜK BAYT gider — diğer bütün
+# çok baytlı değerlerin tersi yönde.
+# --------------------------------------------------------------------
+
+crc:
+  ad: CRC-16/MODBUS
+  polinom: 0xA001             # yansımalı
+  baslangic: 0xFFFF
+  son_xor: 0
+  hatta_sira: dusuk_bayt_once
+
+# --------------------------------------------------------------------
+# Zamanlama
+# --------------------------------------------------------------------
+
+zamanlama:
+  # İşletme
+  zaman_asimi_ms: 50          # node cevabı için beklenen süre
+  deneme: 3                   # cevapsız kalırsa kaç kez tekrarlanır
+  kayip_tur: 3                # kaç başarısız turdan sonra node kayıp sayılır
+
+  # Kurulum
+  bekleme_carpan: 1.5         # bekleme_us = (crc16(uid) XOR crc16(deneme_no)) * 1.5
+  bekleme_en_fazla_us: 98302  # yukarıdaki formülün tavanı
+  onay_bekleme_ms: 100        # node "Buradayım" sonrası onayı ne kadar bekler
+  tarama_bitis: 3             # kaç tamamen sessiz sorgudan sonra tarama biter
+
+# --------------------------------------------------------------------
+# Adres alanı
+# --------------------------------------------------------------------
+
+adres_alani:
+  ortak:                      # her node'da aynı, salt okunur
+    ilk: 0x0000
+    son: 0x000F
+  olcumler:                   # node tipine özel, salt okunur
+    ilk: 0x0010
+    son: 0x00FF
+  ayarlar:                    # yazılabilir, şimdilik kullanılmıyor
+    ilk: 0x0100
+    son: 0x01FF
+
+# Ölçüm bloğunun tipten bağımsız kuralları:
+#   - 0x0010'dan başlar
+#   - aralıksız dizilir, araya boş register konmaz
+#   - 32 bitlik ölçüm iki ardışık register kaplar
+#   - sıra, node_tipleri içindeki yazılış sırasıdır
+# Aralıksızlık şartı hub'ın bütün ölçümleri tek istekle okuyabilmesi içindir.
+
+# --------------------------------------------------------------------
+# Ortak alanlar — her node'da aynı adreste
+# --------------------------------------------------------------------
+
+ortak:
+  - ad: node_tipi
+    offset: 0x0000
+    tip: uint16
+    aciklama: Node tipi kodu
+
+  - ad: fw_surum
+    offset: 0x0001
+    tip: uint16
+    aciklama: Yüksek bayt ana sürüm, düşük bayt alt sürüm
+
+  - ad: durum
+    offset: 0x0002
+    tip: uint16
+    aciklama: Durum bayrakları
+
+  - ad: uid
+    offset: 0x0003
+    tip: bayt[12]
+    aciklama: MCU benzersiz kimliği, 6 register kaplar
+
+  # 0x0009 - 0x000F ayrılmış
+
+# --------------------------------------------------------------------
+# Durum bayrakları — register 0x0002
+# --------------------------------------------------------------------
+
+durum_bayraklari:
+  0: sensor_okunamiyor
+  1: olcum_hazir_degil        # ilk ölçüm henüz tamamlanmadı
+  2: kalibrasyon_gerekli
+  3: besleme_dusuk
+  # 4 - 15 ayrılmış
+
+# --------------------------------------------------------------------
+# Geçersiz ölçüm değerleri
+#
+# Sensör okunamıyorsa ya da ölçüm hazır değilse node bu değeri döndürür.
+# Aynı anda ilgili durum bayrağı da kalkar.
+# --------------------------------------------------------------------
+
+gecersiz_deger:
+  uint16: 0xFFFF
+  int16:  0x8000
+  uint32: 0xFFFFFFFF
+  int32:  0x80000000
+
+# --------------------------------------------------------------------
+# Node tipi kod aralıkları
+# --------------------------------------------------------------------
+
+tip_araliklari:
+  kayitli:                    # numara bu depodan verilir, listede tutulur, çakışmaz
+    ilk: 0x0001
+    son: 0x00FF
+  ayrilmis:                   # ileride yeni bir kategori gerekirse
+    ilk: 0x0100
+    son: 0x0FFF
+  serbest:                    # kimseye sormadan alınır, çakışma sorumluluğu alanda
+    ilk: 0x1000
+    son: 0xFFFE
+
+# Aralık değil, iki ayrı yasak değer.
+# Silinmiş flash 0xFFFF, yazılmamış alan 0x0000 okunur; ikisi de
+# "tip kodu hiç yazılmamış" demektir.
+tanimsiz_degerler: [0x0000, 0xFFFF]
+
+# --------------------------------------------------------------------
+# Node tipleri
+#
+# Tip kodu, ölçüm kümesini tam olarak belirler. Bir node tipine ölçüm
+# eklenir ya da çıkarılırsa o artık yeni bir tiptir ve yeni kod alır;
+# aynı kod farklı ölçüm kümesiyle kullanılamaz.
+#
+# İlk node tipi Adım 3'te eklenecek. Biçim aşağıdaki gibi olacak:
+#
+#   node_tipleri:
+#     0x0001:
+#       ad: Sıcaklık
+#       olcumler:
+#         - ad: sicaklik
+#           offset: 0x0010
+#           tip: int16
+#           olcek: 0.1
+#           birim: "°C"
+#
+# olcek: gerçek değer = ham değer × olcek
+# --------------------------------------------------------------------
+
+node_tipleri: {}
