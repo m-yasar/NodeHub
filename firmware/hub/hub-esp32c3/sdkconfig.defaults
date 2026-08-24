@@ -1,0 +1,21 @@
+# Hub varsayilan ayarlari.
+#
+# sdkconfig üretilen bir dosyadir ve depoda tutulmaz; ESP-IDF ilk derlemede
+# bu dosyadan üretir. Burada yalnizca bilincli degistirilen ayarlar durur.
+#
+# Wi-Fi bilgileri BURAYA YAZILMAZ. Klonlayan kisi kendi aginin bilgilerini
+# `idf.py menuconfig` -> Example Connection Configuration altindan girer.
+
+CONFIG_IDF_TARGET="esp32c3"
+
+# TLS: sunucu sertifikasi ESP-IDF sertifika paketiyle dogrulanir
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
+CONFIG_EXAMPLE_CERT_VALIDATE_BUNDLE=y
+
+# MQTT
+CONFIG_EXAMPLE_MQTT_BROKER_URI="mqtts://broker.emqx.io:8883"
+CONFIG_EXAMPLE_MQTT_PUBLISH_TOPIC="mYasar/NodeHub"
+
+# BOOT butonu — tarama baslatir
+CONFIG_EXAMPLE_BOOT_BUTTON_GPIO=9

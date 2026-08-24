@@ -8,7 +8,7 @@ ESP32. Node'lardan RS485/Modbus RTU ile veri toplar, MQTT ile sunucuya gönderir
 
 | Proje | İçerik |
 |---|---|
-| [`NodeHub_MQTT_DataSender`](NodeHub_MQTT_DataSender/) | Adım 1 — ESP32-C3, BOOT butonuna basınca MQTT publish |
+| [`hub-esp32c3`](hub-esp32c3/) | ESP32-C3. BOOT butonuna basınca node taraması başlatır, MQTT ile sunucuya yayın yapar |
 
 ## Köken
 

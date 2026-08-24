@@ -1,0 +1,8 @@
+# Node taslak projesinin varsayilan ayarlari.
+#
+# sdkconfig üretilen bir dosyadir ve depoda tutulmaz; ESP-IDF ilk derlemede
+# bu dosyadan üretir.
+#
+# Node Wi-Fi kullanmaz; RS485 uzerinden yalnizca hub ile konusur.
+
+CONFIG_IDF_TARGET="esp32"
