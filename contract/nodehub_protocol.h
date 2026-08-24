@@ -77,6 +77,14 @@
 #define NH_TARAMA_BITIS     3u      /* kaç sessiz sorgudan sonra biter  */
 
 /*
+ * Hub, sorgudan sonra cevabı bu kadar bekler.
+ *
+ * Node en fazla 98 ms bekleyip konuşmaya başlıyor, 20 baytlık cevap
+ * 19200'de ~11 ms sürüyor. Yani alt sınır 109 ms; pay bırakıldı.
+ */
+#define NH_CEVAP_BEKLEME_MS 150u
+
+/*
  * Kurulum bekleme süresi.
  *
  * Her node kendine özgü, her turda değişen bir süre bekler. UID her

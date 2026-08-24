@@ -160,6 +160,17 @@ Ayarlar bölümü şimdilik boş; yeri ileride kullanılmak üzere ayrıldı.
 | `0x0003` | uid | 12 bayt | MCU benzersiz kimliği, 6 register kaplar |
 | `0x0009` – `0x000F` | — | — | Ayrılmış |
 
+**UID alanı her platformda 12 bayttır**, ama fabrika kimliğinin uzunluğu işlemciye göre
+değişir. Kimlik 12 bayttan kısaysa başa yazılır, kalan baytlar sıfırla doldurulur:
+
+| İşlemci | Fabrika kimliği | 12 bayta yerleşimi |
+|---|---|---|
+| STM32 | 96 bit benzersiz kimlik | Tamamı kullanılır |
+| ESP32 | 48 bit MAC adresi | İlk 6 bayt MAC, kalan 6 bayt `0x00` |
+
+Alan boyutu sabit tutulur ki çerçeve uzunlukları ve register haritası platformdan
+bağımsız kalsın. ESP32'nin MAC adresi IEEE kayıtlı olduğu için benzersizlik bozulmaz.
+
 Boş bırakılan 7 register ileride ortak alan eklemek içindir. Bu boşluk olmasaydı, yeni bir
 ortak alan eklemek bütün ölçüm offset'lerini kaydırmak anlamına gelirdi — yani sözleşmenin
 bozulması.

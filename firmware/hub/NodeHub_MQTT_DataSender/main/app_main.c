@@ -22,6 +22,7 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
+#include "nh_hub_kurulum.h"
 
 #include "esp_event.h"
 #include "esp_log.h"
@@ -142,24 +143,18 @@ static void IRAM_ATTR boot_button_isr_handler(void *arg)
 static void boot_button_task(void *arg)
 {
     uint32_t io_num;
-    static uint8_t testCounter = 0;
-    char payload[32];
 
     for (;;) {
         if (xQueueReceive(s_button_evt_queue, &io_num, portMAX_DELAY)) {
-            /* Simple debounce: wait a bit and confirm the button is still pressed (active low) */
+            /* Basit sicrama filtresi: biraz bekle, hala basili mi bak (aktif dusuk) */
             vTaskDelay(pdMS_TO_TICKS(50));
             if (gpio_get_level(io_num) != 0) {
                 continue;
             }
-            if (s_mqtt_client == NULL) {
-                ESP_LOGW(TAG, "BOOT button pressed but MQTT client is not ready yet");
-                continue;
-            }
-            testCounter++;
-            snprintf(payload, sizeof(payload), "Selam %u", testCounter);
-            int msg_id = esp_mqtt_client_publish(s_mqtt_client, CONFIG_EXAMPLE_MQTT_PUBLISH_TOPIC, payload, 0, 1, 0);
-            ESP_LOGI(TAG, "BOOT button pressed, published \"%s\" to %s, msg_id=%d", payload, CONFIG_EXAMPLE_MQTT_PUBLISH_TOPIC, msg_id);
+
+            ESP_LOGI(TAG, "BOOT butonuna basildi — node taramasi baslatiliyor");
+            uint8_t adet = nh_hub_tara();
+            ESP_LOGI(TAG, "tarama sonucu: %u node", adet);
         }
     }
 }
@@ -201,12 +196,23 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-     * Read "Establishing Wi-Fi or Ethernet Connection" section in
-     * examples/protocols/README.md for more information about this function.
-     */
-    ESP_ERROR_CHECK(example_connect());
+    /* RS485 kimlik atama katmani once baslar — aga bagli degildir. */
+    nh_hub_baslat();
+    configure_boot_button();
+
+    /* Wi-Fi ve MQTT.
+     *
+     * Baglanti kurulamazsa hub yeniden baslatilmaz, yalnizca uyari verilir.
+     * Boylece kimlik atama katmani ag olmadan da sinanabilir. Eskiden burada
+     * ESP_ERROR_CHECK vardi ve Wi-Fi yoksa kart sonsuz reset donguSUne
+     * giriyordu. */
+    esp_err_t r = example_connect();
+    if (r != ESP_OK) {
+        ESP_LOGW(TAG, "Wi-Fi baglanamadi (%s) — MQTT atlaniyor, "
+                      "RS485 tarafi calismaya devam ediyor",
+                 esp_err_to_name(r));
+        return;
+    }
 
     mqtt_app_start();
-    configure_boot_button();
 }
