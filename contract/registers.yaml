@@ -156,19 +156,25 @@ tanimsiz_degerler: [0x0000, 0xFFFF]
 # eklenir ya da çıkarılırsa o artık yeni bir tiptir ve yeni kod alır;
 # aynı kod farklı ölçüm kümesiyle kullanılamaz.
 #
-# İlk node tipi Adım 3'te eklenecek. Biçim aşağıdaki gibi olacak:
-#
-#   node_tipleri:
-#     0x0001:
-#       ad: Sıcaklık
-#       olcumler:
-#         - ad: sicaklik
-#           offset: 0x0010
-#           tip: int16
-#           olcek: 0.1
-#           birim: "°C"
-#
 # olcek: gerçek değer = ham değer × olcek
 # --------------------------------------------------------------------
 
-node_tipleri: {}
+node_tipleri:
+
+  0x0001:
+    ad: Sıcaklık
+    olcumler:
+      - ad: sicaklik
+        offset: 0x0010
+        tip: int16
+        olcek: 0.1
+        birim: "°C"
+
+# İlk tip 31 Ağustos 2026'da eklendi. Node tarafındaki karşılığı
+# firmware/node/node-taslak/main/olcum.c — gerçek sensör henüz yok,
+# 20.0-25.0 arasında gezinen sahte bir değer üretiliyor.
+#
+# Hub tarafındaki tablo şimdilik ELLE yazıldı:
+# firmware/hub/hub-esp32c3/main/nh_tipler.c
+# Üreteç yazılınca o dosya buradan üretilecek. İkisi ayrışırsa
+# geçerli olan bu dosyadır.

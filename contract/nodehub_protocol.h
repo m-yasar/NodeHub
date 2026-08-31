@@ -39,6 +39,19 @@
 #define NH_FK_SORGU         0x64u   /* Kim var                          */
 #define NH_FK_CEVAP         0x65u   /* Buradayım                        */
 #define NH_FK_ONAY          0x66u   /* Adres senin                      */
+#define NH_FK_UNUT          0x67u   /* Kimliğini unut                   */
+
+/*
+ * Unut paketindeki sabit anahtar.
+ *
+ * Bu, protokoldeki tek geri alınamaz komut. CRC tek başına gürültüden
+ * gelen bir çerçevenin geçerli görünme ihtimalini 1/65536'ya indiriyor;
+ * sonlandırılmamış bir hatta aylar boyunca bu az değil. Sabit bir bayt
+ * eklemek ihtimali 1/16.7 milyona düşürüyor ve bir bayta mal oluyor.
+ *
+ * Diğer paketlerde yok, çünkü onların yanlış çalışması geri alınabilir.
+ */
+#define NH_UNUT_ANAHTAR     0x5Au
 
 #define NH_UID_UZUNLUK      12u     /* STM32 benzersiz kimliği, 96 bit  */
 
@@ -162,11 +175,43 @@ typedef struct __attribute__((packed)) {
 } nh_onay_t;
 
 /* ------------------------------------------------------------------ */
+/* 4. Unut paketi         hub -> yayın                                 */
+/*                                                                     */
+/* Node kimliğini siler ve bakir hâline döner; bir sonraki sorguda      */
+/* yeniden cevap verir.                                                 */
+/*                                                                     */
+/* Paket yayına gider ama kime ait olduğu içindeki "hedef" alanındadır  */
+/* — onay paketiyle aynı deyim. Adres alanı kullanılmaz, çünkü node'un  */
+/* kurulum işleyicisi yalnızca yayın adresli çerçeveleri açar.          */
+/*                                                                     */
+/*     hedef = NH_ADRES_YAYIN   hattaki bütün node'lar unutur          */
+/*     hedef = 0x01 .. 0xF7     yalnızca o adresteki node unutur       */
+/*                                                                     */
+/* Cevap yoktur. Yayında zaten çakışırdı; tekil silmede hub adresi      */
+/* okumayı deneyerek doğrulayabilir — cevap gelmiyorsa silinmiştir.     */
+/*                                                                     */
+/* DİKKAT: hattan çıkmış ya da elektriği kesik bir node yayın silmeyi   */
+/* duymaz, kimliğini korur. Sonradan takıldığında bu arada başkasına    */
+/* verilmiş bir adresle hatta girip çakışabilir. Tekil silmede bu risk  */
+/* yoktur.                                                              */
+/* ------------------------------------------------------------------ */
+
+typedef struct __attribute__((packed)) {
+    uint8_t adres;                      /* NH_ADRES_YAYIN               */
+    uint8_t fk;                         /* NH_FK_UNUT                   */
+    uint8_t hedef;                      /* 0x00 = herkes, yoksa adres   */
+    uint8_t anahtar;                    /* NH_UNUT_ANAHTAR              */
+    uint8_t crc_lo;
+    uint8_t crc_hi;
+} nh_unut_t;
+
+/* ------------------------------------------------------------------ */
 /* Boyutlar hatta gidecek bayt sayısıdır; dolgu olmamalı.              */
 /* ------------------------------------------------------------------ */
 
 _Static_assert(sizeof(nh_sorgu_t) ==  5, "nh_sorgu_t dolgu almis");
 _Static_assert(sizeof(nh_cevap_t) == 20, "nh_cevap_t dolgu almis");
 _Static_assert(sizeof(nh_onay_t)  == 17, "nh_onay_t dolgu almis");
+_Static_assert(sizeof(nh_unut_t)  ==  6, "nh_unut_t dolgu almis");
 
 #endif /* NODEHUB_PROTOCOL_H */

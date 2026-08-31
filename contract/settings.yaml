@@ -1,0 +1,190 @@
+# NodeHub — kurulum ayarları sözleşmesi
+#
+# Telefon ile hub arasındaki sözleşme. Modbus tarafı registers.yaml'da;
+# bu dosya onun üstünde durur ve iki yeri birbirine bağlar:
+#
+#   registers.yaml  →  node_tipi kodu, ölçüm listesi   (node'dan gelir, salt okunur)
+#   settings.yaml   →  ad, periyot, aktif              (kullanıcı yazar)
+#
+# Bağlantı alanı ikisinde de "node tipi kodu"dur.
+#
+# Buradan üretilir:
+#   - hub için C yapıları (nh_ayarlar.h)
+#   - kurulum sayfasının API sözleşmesi
+#
+# İnsan tarafı anlatım: docs/kurulum-arayuzu.md
+
+surum: 1
+
+# --------------------------------------------------------------------
+# Kurulum ağı
+#
+# Hub AP AÇMAZ. Ömrü boyunca yalnızca station'dır.
+#
+# Kurulum anında kullanıcı telefonundan aşağıdaki adla bir ağ paylaşır;
+# hub o ağa katılır ve sayfasını oradan servis eder. Kurulum bitince
+# ev ağına geçer.
+#
+# HER AÇILIŞTA ilk 30 saniye bu ağ aranır. Ayar olsun olmasın, tuş
+# kombinasyonu gerekmesin diye. Ağ yoksa süre sonunda işletmeye geçilir.
+#
+# Bilinerek alınan risk: bu ad ve parola açık kaynak deposunda yazılı.
+# Hub'ın yanında aynı adla ağ açan biri, hub'ın bir sonraki açılışında
+# onu kendi ağına alıp ayar sayfasına erişebilir. Pencere her açılışta
+# 30 saniye; elektrik kesintisi de bu pencereyi kendiliğinden açar.
+#
+# Kapatmak gerekirse iki yol var: parolayı hub'a özel yapmak
+# (MAC'ten türetip karta basmak), ya da aramayı yalnızca ayar yokken
+# ve BOOT basılıyken çalıştırmak.
+# --------------------------------------------------------------------
+
+kurulum_agi:
+  ssid: nodehub
+  parola: nodehub12          # WPA2 en az 8 karakter ister
+  arama_suresi_ms: 30000     # bulunamazsa işletme moduna düşer
+  mdns_adi: nodehub          # tarayıcıdan http://nodehub.local
+  oturum_suresi_ms: 600000   # kimse bağlanmazsa 10 dk sonra çıkar
+
+# --------------------------------------------------------------------
+# Alan uzunlukları — C yapılarındaki tampon boyutları
+#
+# Sonlandırıcı '\0' dahildir. Sayfa da bu sınırları uygular.
+# --------------------------------------------------------------------
+
+uzunluklar:
+  ad: 32                     # hub adı, node özel adı
+  ssid: 33                   # 802.11 SSID en fazla 32 bayt
+  parola: 65                 # WPA2 en fazla 63 karakter
+  uri: 128                   # mqtts://host:port
+  konu: 64                   # MQTT konu öneki
+
+# --------------------------------------------------------------------
+# Hub ayarları — tek kayıt
+#
+# NVS: ad alanı "nodehub", anahtar "hub", tek blob.
+# Tek blob çünkü hepsi birlikte yazılır; kısmi güncelleme anlamsız.
+# --------------------------------------------------------------------
+
+hub_ayarlari:
+  - ad: wifi_ssid
+    tip: metin[ssid]
+    aciklama: Hub'ın işletmede bağlanacağı ağ
+
+  - ad: wifi_parola
+    tip: metin[parola]
+    aciklama: Sayfada asla geri gösterilmez, yalnızca yazılır
+
+  - ad: broker_uri
+    tip: metin[uri]
+    aciklama: "mqtts://broker.emqx.io:8883"
+
+  - ad: broker_kullanici
+    tip: metin[ad]
+
+  - ad: broker_parola
+    tip: metin[parola]
+    aciklama: Sayfada asla geri gösterilmez
+
+  - ad: konu_oneki
+    tip: metin[konu]
+    aciklama: Yayınlanan konunun başı, örn. "mYasar/NodeHub"
+
+  - ad: hub_adi
+    tip: metin[ad]
+    aciklama: Kullanıcının verdiği ad, örn. "Atölye"
+
+# hub_id ayar değildir — MAC'ten türer, salt okunur, "hub-a4f2" biçiminde.
+
+# --------------------------------------------------------------------
+# Node kaydı — adres başına bir kayıt
+#
+# NVS: ad alanı "nodehub", anahtar "node_01" ... "node_f7", her biri blob.
+# Ayrı bloblar çünkü bir node'un adını değiştirmek diğerlerini yeniden
+# yazmayı gerektirmemeli.
+#
+# Adres aralığı nodehub_protocol.h'den gelir: NH_ADRES_ILK .. NH_ADRES_SON
+# --------------------------------------------------------------------
+
+node_kaydi:
+  node_verir:                # kurulum fazında hattan gelir, kullanıcı değiştiremez
+    - ad: adres
+      tip: uint8
+      aciklama: Hub'ın kurulum fazında atadığı Modbus adresi
+
+    - ad: uid
+      tip: bayt[12]
+      aciklama: MCU benzersiz kimliği
+
+    - ad: tip
+      tip: uint16
+      aciklama: registers.yaml içindeki node_tipleri anahtarı
+
+    - ad: fw_surum
+      tip: uint16
+      aciklama: Yüksek bayt ana sürüm, düşük bayt alt sürüm
+
+  kullanici_yazar:
+    - ad: ad
+      tip: metin[ad]
+      varsayilan: ""
+      aciklama: Boşsa sayfa tip adını gösterir
+
+    - ad: periyot_ms
+      tip: uint32
+      varsayilan: 10000
+      aciklama: Bu node kaç milisaniyede bir okunacak
+
+    - ad: aktif
+      tip: uint8
+      varsayilan: 1
+      aciklama: 0 ise sıraya hiç alınmaz
+
+  calisma_zamani:            # NVS'e yazılmaz, her açılışta sıfırlanır
+    - ad: kayip
+      tip: uint8
+      aciklama: NH_KAYIP_TUR turdur cevap vermiyor
+
+# Sayfadaki okuma sıklığı seçenekleri. Serbest sayı yerine liste,
+# çünkü hub bunları tek bir tur planına dizecek.
+periyot_secenekleri_ms: [1000, 5000, 10000, 30000, 60000, 300000, 900000, 3600000]
+
+# --------------------------------------------------------------------
+# HTTP arayüzü
+#
+# Hub kurulum ağına katıldığında bu uçları servis eder.
+# Gövde biçimi JSON. Parolalar hiçbir GET cevabında yer almaz.
+# --------------------------------------------------------------------
+
+uclar:
+  - yol: /
+    yontem: GET
+    doner: Kurulum sayfası (gzip'li tek HTML)
+
+  - yol: /api/ayarlar
+    yontem: GET
+    doner: hub_ayarlari — parola alanları hariç, artı hub_id ve fw
+
+  - yol: /api/ayarlar
+    yontem: POST
+    alir: hub_ayarlari — boş bırakılan parola alanı öncekini korur
+
+  - yol: /api/nodelar
+    yontem: GET
+    doner: Kayıtlı node listesi
+
+  - yol: /api/nodelar/{adres}
+    yontem: POST
+    alir: kullanici_yazar alanları
+
+  - yol: /api/nodelar/{adres}
+    yontem: DELETE
+    aciklama: Kaydı siler. Node hattan gitmişse listeyi temizlemek için
+
+  - yol: /api/tarama
+    yontem: POST
+    aciklama: Kurulum fazını çalıştırır, bulunan node'ları kaydeder
+    doner: Güncel node listesi
+
+  - yol: /api/yeniden-baslat
+    yontem: POST
+    aciklama: Kaydedilen ayarlarla işletme moduna geçmek için
