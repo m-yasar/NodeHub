@@ -176,6 +176,38 @@ void nh_kurulum_baslat(void)
     s_durum = nh_kayit_kimlik() ? ST_KAYITLI : ST_BAKIR;
 }
 
+/*
+ * Kimligi siler, bakir hale doner.
+ *
+ * hedef = NH_ADRES_YAYIN  -> hattaki herkes unutur
+ * hedef = bir adres       -> yalnizca o adrestekI node unutur
+ */
+static void unut_geldi(const uint8_t *c)
+{
+    if (c[3] != NH_UNUT_ANAHTAR) {
+        ESP_LOGW(TAG, "unut paketi anahtarsiz (0x%02X) — yok sayildi", c[3]);
+        return;
+    }
+
+    uint8_t hedef  = c[2];
+    uint8_t kimlik = nh_kayit_kimlik();
+
+    if (kimlik == 0) {
+        return;                     /* zaten bakirim */
+    }
+    if (hedef != NH_ADRES_YAYIN && hedef != kimlik) {
+        return;                     /* baskasina soylenmis */
+    }
+
+    esp_timer_stop(s_bekleme);
+    esp_timer_stop(s_atama_asimi);
+
+    nh_kayit_sil();
+    s_durum = ST_BAKIR;
+
+    ESP_LOGW(TAG, "kimlik 0x%02X silindi — bakir hale donuldu", kimlik);
+}
+
 /* Çerçeve kurulum protokolüne aitse işler ve true döner. */
 bool nh_kurulum_cerceve(const uint8_t *c, uint16_t n)
 {
@@ -197,6 +229,14 @@ bool nh_kurulum_cerceve(const uint8_t *c, uint16_t n)
             onay_geldi(c);
         } else {
             ESP_LOGW(TAG, "onay 17 bayt olmali, %u geldi", n);
+        }
+        return true;
+
+    case NH_FK_UNUT:
+        if (n == 6) {
+            unut_geldi(c);
+        } else {
+            ESP_LOGW(TAG, "unut 6 bayt olmali, %u geldi", n);
         }
         return true;
 
