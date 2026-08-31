@@ -1,0 +1,201 @@
+<!doctype html><html lang="tr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NodeHub</title>
+<style>
+:root{--paper:#E7EAEC;--card:#F5F7F7;--block:#DDE3E6;--ink:#121A20;--ink2:#56646E;--rule:#B6C0C6;--wire:#0B6E80;--net:#A3123A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--card);color:var(--ink);font:15px/1.6 "Segoe UI",system-ui,Arial,sans-serif}
+.m{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace}
+.g{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:11px;letter-spacing:.18em;color:var(--ink2)}
+.cb{display:flex;justify-content:space-between;align-items:center;padding:17px 20px;background:var(--paper);border-bottom:2px solid var(--rule)}
+.tb{display:flex;background:var(--paper);border-bottom:2px solid var(--rule)}
+.tb b{flex:1;text-align:center;padding:14px 0;font:14px/1.6 "Segoe UI",system-ui,sans-serif;color:var(--ink2);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer}
+.tb b.on{color:var(--ink);font-weight:600;border-bottom-color:var(--wire)}
+main{display:flex;flex-direction:column;gap:24px;padding:20px 20px 26px}
+.s{display:flex;align-items:center;gap:12px}
+.s i{flex:1;height:2px;background:var(--rule)}
+label{display:flex;flex-direction:column;gap:7px}
+input{height:46px;padding:0 12px;background:var(--card);border:2px solid var(--ink);color:var(--ink);font:15px ui-monospace,Consolas,monospace;border-radius:0;width:100%}
+input:focus{outline:3px solid var(--wire);outline-offset:1px}
+button{height:52px;background:var(--wire);border:2px solid var(--wire);color:var(--card);font:13px ui-monospace,Consolas,monospace;letter-spacing:.14em;cursor:pointer;border-radius:0}
+button:disabled{opacity:.5;cursor:default}
+button.o{background:var(--card);border-color:var(--net);color:var(--net)}
+button.k{height:46px;padding:0 26px}
+p{margin:0;font:12px/1.65 ui-monospace,Consolas,monospace;color:var(--ink2)}
+p.hata{color:var(--net)}
+.r{display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--block);border:2px solid var(--ink);cursor:pointer;text-align:left;width:100%;height:auto;font:inherit;color:inherit;letter-spacing:0}
+.r.x{background:var(--card);border-style:dashed;border-color:var(--ink2);color:var(--ink2)}
+.r em{font:600 15px ui-monospace,Consolas,monospace;font-style:normal;color:var(--wire)}
+.r.x em{color:var(--ink2)}
+.r span{flex:1;display:flex;flex-direction:column;gap:4px}
+.r u{font-size:16px;text-decoration:none}
+.r small{font:11px ui-monospace,Consolas,monospace;color:var(--ink2)}
+dl{display:grid;grid-template-columns:92px 1fr;gap:10px 12px;padding:14px;margin:0;background:var(--block);border:2px solid var(--ink)}
+dt{font:12px ui-monospace,Consolas,monospace;color:var(--ink2)}
+dd{font:13px ui-monospace,Consolas,monospace;margin:0;word-break:break-all}
+.c{display:flex;flex-wrap:wrap;gap:8px}
+.c button{height:44px;padding:0 14px;background:var(--card);border-color:var(--ink);color:var(--ink);letter-spacing:0}
+.c button[aria-pressed=true]{background:var(--wire);border-color:var(--wire);color:var(--card)}
+.a{width:64px;height:38px;padding:3px;display:flex;align-items:center;justify-content:flex-start;background:var(--block);border:2px solid var(--ink2);cursor:pointer}
+.a[aria-checked=true]{background:var(--wire);border-color:var(--wire);justify-content:flex-end}
+.a i{width:26px;height:26px;background:var(--ink2)}
+.a[aria-checked=true] i{background:var(--card)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:2px solid var(--rule)}
+th{font:10px ui-monospace,Consolas,monospace;letter-spacing:.08em;color:var(--ink2);text-align:left;padding:12px 6px 4px}
+td{font:12px ui-monospace,Consolas,monospace;padding:4px 6px 12px}
+.h{display:none}
+.f{display:flex;gap:10px}
+.f button{flex:1}
+</style></head><body>
+
+<div class="cb"><b class="m" style="font-size:17px">NodeHub</b><span class="m" style="font-size:12px;color:var(--ink2)" id="kn">…</span></div>
+<div class="tb"><b class="on" id="t0">Ayarlar</b><b id="t1">Node'lar</b></div>
+
+<main id="v0">
+  <div class="s"><span class="g">AĞ</span><i></i></div>
+  <label><span class="g">WIFI AĞI</span><input id="ss" autocapitalize="off" autocomplete="off"></label>
+  <label><span class="g">PAROLA</span><input id="sp" type="password" placeholder="değiştirmemek için boş bırak"></label>
+  <div class="s"><span class="g" style="color:var(--net)">SUNUCU · MQTT</span><i style="background:var(--net);opacity:.35"></i></div>
+  <label><span class="g">BROKER ADRESİ</span><input id="bu" autocapitalize="off" autocomplete="off" placeholder="mqtts://broker.emqx.io:8883"></label>
+  <label><span class="g">KULLANICI ADI</span><input id="bk" autocapitalize="off" autocomplete="off"></label>
+  <label><span class="g">PAROLA</span><input id="bp" type="password" placeholder="değiştirmemek için boş bırak"></label>
+  <label><span class="g">KONU ÖNEKİ</span><input id="bo" autocapitalize="off" autocomplete="off" placeholder="mYasar/NodeHub"></label>
+  <div class="s"><span class="g">HUB</span><i></i></div>
+  <label><span class="g">HUB ADI</span><input id="ha" placeholder="Atölye"></label>
+  <button id="ka">KAYDET</button>
+  <p id="ad">Kaydedince hub yeniden başlar ve ağa bağlanır.</p>
+</main>
+
+<main id="v1" class="h">
+  <p id="td">…</p>
+  <div class="f">
+    <button class="k" id="tr">TARA</button>
+    <button class="k o" id="us">KİMLİKLERİ SİL</button>
+  </div>
+  <div id="nl" style="display:flex;flex-direction:column;gap:10px"></div>
+  <p>Kimliksiz bir kart takarsan Tara'ya bas — hub ona sıradaki kimliği verir.</p>
+</main>
+
+<main id="v2" class="h">
+  <div class="s"><span class="g" id="nb"></span><i></i></div>
+  <p>Bu değerler node'dan geliyor, değiştirilemez.</p>
+  <dl><dt>adres</dt><dd id="da"></dd><dt>tip</dt><dd id="dp"></dd><dt>firmware</dt><dd id="df"></dd><dt>uid</dt><dd id="du"></dd></dl>
+  <label><span class="g">ÖZEL İSİM</span><input id="ni" placeholder="Kazan dairesi"></label>
+  <div style="display:flex;flex-direction:column;gap:10px"><span class="g">OKUMA SIKLIĞI</span><div class="c" id="pc"></div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <span style="display:flex;flex-direction:column;gap:5px"><span class="g">AKTİF</span><p id="am"></p></span>
+    <div class="a" id="ak" role="switch" aria-checked="true"><i></i></div>
+  </div>
+  <div class="s"><span class="g">ÖLÇÜMLER</span><i></i></div>
+  <table id="ot"></table>
+  <p id="nd"></p>
+  <div class="f"><button id="nk">KAYDET</button><button class="o" id="nsl">KİMLİĞİNİ SİL</button></div>
+</main>
+
+<script>
+var P=[1000,5000,10000,30000,60000,300000,900000,3600000],
+PA=['1 sn','5 sn','10 sn','30 sn','1 dk','5 dk','15 dk','1 saat'],
+N=[],S=null,pe=10000,ok=1;
+
+function $(i){return document.getElementById(i)}
+function vg(n){for(var i=0;i<3;i++)$('v'+i).className=i==n?'':'h';
+ $('t0').className=n==0?'on':'';$('t1').className=n==1?'on':''}
+$('t0').onclick=function(){vg(0)};$('t1').onclick=function(){vg(1)};
+
+function j(u,o){return fetch(u,o).then(function(r){
+ if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}
+function hx(v,n){var s=v.toString(16).toUpperCase();while(s.length<n)s='0'+s;return '0x'+s}
+function tipAdi(n){return n.tip_ad&&n.tip_ad.length?n.tip_ad:(n.ad?'':'Tanımsız tip')}
+function bilgi(e,t,h){e.textContent=t;e.className=h?'hata':''}
+
+/* ---- Ayarlar ---- */
+j('/api/ayarlar').then(function(a){
+ $('kn').textContent=a.hub_id+' · fw '+a.fw;
+ $('ss').value=a.wifi_ssid||'';$('bu').value=a.broker_uri||'';
+ $('bk').value=a.broker_kullanici||'';$('bo').value=a.konu_oneki||'';
+ $('ha').value=a.hub_adi||''}).catch(function(e){bilgi($('ad'),'Ayarlar okunamadı: '+e.message,1)});
+
+$('ka').onclick=function(){
+ var b=$('ka');b.disabled=true;bilgi($('ad'),'kaydediliyor…');
+ j('/api/ayarlar',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({wifi_ssid:$('ss').value,wifi_parola:$('sp').value,
+   broker_uri:$('bu').value,broker_kullanici:$('bk').value,
+   broker_parola:$('bp').value,konu_oneki:$('bo').value,hub_adi:$('ha').value})})
+ .then(function(){bilgi($('ad'),'Kaydedildi. Yeniden başlatmak için tekrar bas.');
+  b.textContent='YENİDEN BAŞLAT';b.disabled=false;
+  b.onclick=function(){fetch('/api/yeniden-baslat',{method:'POST'});
+   bilgi($('ad'),'Hub yeniden başlıyor. Bu sayfa kapanacak.')}})
+ .catch(function(e){bilgi($('ad'),'Kaydedilemedi: '+e.message,1);b.disabled=false})};
+
+/* ---- Node listesi ---- */
+function liste(){var e=$('nl');e.innerHTML='';
+ if(!N.length){var p=document.createElement('p');
+  p.textContent='Kayıtlı node yok. Tara\'ya bas.';e.appendChild(p);return}
+ N.forEach(function(n,i){var d=document.createElement('button');
+  d.className='r'+(n.kayip?' x':'');
+  d.innerHTML='<em>'+hx(n.adres,2)+'</em><span><u></u><small>tip '+hx(n.tip,4)+
+   '</small></span>'+(n.kayip?'<span class="g" style="color:var(--net)">KAYIP</span>':'')+
+   '<svg width=18 height=18 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2.4><path d="M9 5l7 7-7 7"/></svg>';
+  d.querySelector('u').textContent=n.ad||tipAdi(n);
+  d.onclick=function(){detay(i)};e.appendChild(d)})}
+
+function yenile(){return j('/api/nodelar').then(function(r){N=r.nodelar||[];
+ $('td').textContent=N.length+' node kayıtlı';liste()})}
+yenile().catch(function(e){bilgi($('td'),'Liste okunamadı: '+e.message,1)});
+
+$('tr').onclick=function(){var b=$('tr');b.disabled=true;
+ bilgi($('td'),'taranıyor…');
+ j('/api/tarama',{method:'POST'}).then(function(r){N=r.nodelar||[];
+  $('td').textContent='tarama bitti — '+N.length+' node';liste();b.disabled=false})
+ .catch(function(e){bilgi($('td'),'Tarama başarısız: '+e.message,1);b.disabled=false})};
+
+/* ---- Node ayarı ---- */
+function detay(i){S=N[i];pe=S.periyot_ms;ok=S.aktif;
+ $('nb').textContent=hx(S.adres,2)+' · '+(S.ad||tipAdi(S));
+ $('da').textContent=hx(S.adres,2);
+ $('dp').textContent=hx(S.tip,4)+(S.tip_ad?' · '+S.tip_ad:'');
+ $('df').textContent=S.fw;$('du').textContent=S.uid;$('ni').value=S.ad||'';
+ bilgi($('nd'),'');
+ var c=$('pc');c.innerHTML='';
+ PA.forEach(function(t,k){var b=document.createElement('button');b.textContent=t;
+  b.setAttribute('aria-pressed',P[k]==pe);
+  b.onclick=function(){pe=P[k];
+   Array.prototype.forEach.call(c.children,function(x,y){
+    x.setAttribute('aria-pressed',P[y]==pe)})};
+  c.appendChild(b)});
+ anahtarCiz();
+ var o='<tr><th>ÖLÇÜM</th><th>TİP</th><th>ÖLÇEK</th><th>BİRİM</th><th>OFFSET</th></tr>';
+ if(S.olcumler&&S.olcumler.length){S.olcumler.forEach(function(m){
+  o+='<tr><td>'+m.ad+'</td><td>'+m.tip+'</td><td>×'+m.olcek+'</td><td>'+
+     m.birim+'</td><td>'+hx(m.offset,4)+'</td></tr>';});}
+ else{o+='<tr><td colspan=5>bu tip sözleşmede tanımlı değil</td></tr>';}
+ $('ot').innerHTML=o;vg(2)}
+
+function anahtarCiz(){$('ak').setAttribute('aria-checked',!!ok);
+ $('am').textContent=ok?'okumaya dahil':'atlanıyor'}
+$('ak').onclick=function(){ok=ok?0:1;anahtarCiz()};
+
+$('nk').onclick=function(){var b=$('nk');b.disabled=true;bilgi($('nd'),'kaydediliyor…');
+ j('/api/nodelar/'+S.adres,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({ad:$('ni').value,periyot_ms:pe,aktif:ok})})
+ .then(function(){b.disabled=false;return yenile()}).then(function(){vg(1)})
+ .catch(function(e){bilgi($('nd'),'Kaydedilemedi: '+e.message,1);b.disabled=false})};
+
+function unut(hedef){return j('/api/unut',{method:'POST',
+ headers:{'Content-Type':'application/json'},body:JSON.stringify({hedef:hedef})})
+ .then(function(r){N=r.nodelar||[];liste()})}
+
+$('us').onclick=function(){
+ if(!confirm('Hattaki BÜTÜN node kimlikleri silinecek. Kartlar bakir hale döner '
+  +'ve yeniden Tara gerekir. Emin misin?'))return;
+ var b=$('us');b.disabled=true;bilgi($('td'),'kimlikler siliniyor…');
+ unut(0).then(function(){$('td').textContent='kimlikler silindi — Tara\'ya bas';
+  b.disabled=false})
+ .catch(function(e){bilgi($('td'),'Silinemedi: '+e.message,1);b.disabled=false})};
+
+$('nsl').onclick=function(){
+ if(!confirm('Bu node kimliğini silecek ve bakir hale dönecek. Emin misin?'))return;
+ var b=$('nsl');b.disabled=true;
+ unut(S.adres).then(function(){b.disabled=false;vg(1)})
+ .catch(function(e){bilgi($('nd'),'Silinemedi: '+e.message,1);b.disabled=false})};
+</script></body></html>

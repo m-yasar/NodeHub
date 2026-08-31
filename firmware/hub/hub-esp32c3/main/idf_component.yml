@@ -1,7 +1,8 @@
 dependencies:
-  protocol_examples_common:
-    path: ${IDF_PATH}/examples/common_components/protocol_examples_common
   espressif/mqtt: "^1.0.0"
+  # Kurulum sayfasina http://nodehub.local ile ulasmak icin.
+  # IDF cekirdeginde degil, kayittan indirilir.
+  espressif/mdns: "^1.2"
   espressif/esp_wifi_remote:
     version: ">=0.10,<2.0"
     rules:

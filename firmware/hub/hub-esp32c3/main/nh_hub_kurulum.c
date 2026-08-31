@@ -20,6 +20,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -37,12 +38,17 @@ static const char *TAG = "nh_hub";
 static nh_hub_node_t s_liste[NH_HUB_EN_FAZLA_NODE];
 static uint8_t       s_adet;
 static uint8_t       s_deneme_no;
+static SemaphoreHandle_t s_hat;
 
 /* Son gonderilen cerceve. RE surekli dusuk oldugu icin kendi yayinimizi
    geri duyuyoruz; birebir ayni cerceve gelirse yanki sayilip atiliyor.
    Zamanlamaya dayanmadigi icin guvenilir. */
 static uint8_t       s_son_tx[64];
 static uint16_t      s_son_tx_n;
+
+/* Ileri bildirim — nh_hub_oku bunlardan once tanimli. */
+static void     gonder(const uint8_t *c, uint16_t n);
+static uint16_t al(uint8_t *tampon, uint32_t bekle_ms);
 
 /* --------------------------------------------------------------- */
 
@@ -74,8 +80,68 @@ void nh_hub_baslat(void)
     gpio_config(&de);
     gpio_set_level(HUB_PIN_DE, 0);          /* boşta dinle */
 
+    /*
+     * Hat kilidi.
+     *
+     * Iki ayri gorev ayni hatti kullaniyor: olcum planlayicisi surekli
+     * node okuyor, sayfadan gelen tarama/unut istegi HTTP gorevinde
+     * calisiyor. Kilit olmazsa birinin gonderdigi cerceve otekinin
+     * cevabina karisir.
+     */
+    s_hat = xSemaphoreCreateMutex();
+
     ESP_LOGI(TAG, "RS485 hazir — %d baud, tx=%d rx=%d de=%d",
              NH_HIZ, HUB_PIN_TX, HUB_PIN_RX, HUB_PIN_DE);
+}
+
+/* ---------------------------------------------------------------- */
+/* Isletme okumasi — FC 03                                           */
+/* ---------------------------------------------------------------- */
+
+bool nh_hub_oku(uint8_t adres, uint16_t ilk_reg, uint16_t adet,
+                uint16_t *cikti)
+{
+    if (adet == 0 || adet > NH_EN_FAZLA_REGISTER || cikti == NULL) {
+        return false;
+    }
+
+    uint8_t c[8];
+    uint16_t n = 0;
+    c[n++] = adres;
+    c[n++] = NH_OKUMA_FK;
+    c[n++] = (uint8_t)(ilk_reg >> 8);   c[n++] = (uint8_t)(ilk_reg & 0xFF);
+    c[n++] = (uint8_t)(adet >> 8);      c[n++] = (uint8_t)(adet & 0xFF);
+    n = nh_crc_ekle(c, n);
+
+    uint8_t cevap[TAMPON];
+    uint16_t m;
+    bool tamam = false;
+
+    xSemaphoreTake(s_hat, portMAX_DELAY);
+
+    for (uint8_t deneme = 0; deneme < NH_DENEME && !tamam; deneme++) {
+        gonder(c, n);
+        m = al(cevap, NH_ZAMAN_ASIMI_MS);
+
+        if (m == 0) {
+            continue;                       /* sessizlik — tekrar dene */
+        }
+
+        uint16_t beklenen = (uint16_t)(5 + 2 * adet);
+        if (m != beklenen || !nh_crc_dogru(cevap, m) ||
+            cevap[0] != adres || cevap[1] != NH_OKUMA_FK ||
+            cevap[2] != (uint8_t)(2 * adet)) {
+            continue;                       /* bozuk ya da baskasinin */
+        }
+
+        for (uint16_t i = 0; i < adet; i++) {
+            cikti[i] = (uint16_t)((cevap[3 + 2 * i] << 8) | cevap[4 + 2 * i]);
+        }
+        tamam = true;
+    }
+
+    xSemaphoreGive(s_hat);
+    return tamam;
 }
 
 static void gonder(const uint8_t *c, uint16_t n)
@@ -152,6 +218,37 @@ static void sorgu_gonder(uint8_t deneme_no)
     c[n++] = deneme_no;
     n = nh_crc_ekle(c, n);
     gonder(c, n);
+}
+
+void nh_hub_unut(uint8_t hedef)
+{
+    xSemaphoreTake(s_hat, portMAX_DELAY);
+
+    uint8_t c[8];
+    uint16_t n = 0;
+    c[n++] = NH_ADRES_YAYIN;
+    c[n++] = NH_FK_UNUT;
+    c[n++] = hedef;
+    c[n++] = NH_UNUT_ANAHTAR;
+    n = nh_crc_ekle(c, n);
+
+    /*
+     * Cevap yok, o yuzden iki kez gonderiliyor. Tek kayip cerceve
+     * bir node'un kimligini uzerinde birakir ve o node sonradan
+     * baskasina verilmis bir adresle hatta girer.
+     */
+    gonder(c, n);
+    vTaskDelay(pdMS_TO_TICKS(50));
+    gonder(c, n);
+
+    if (hedef == NH_ADRES_YAYIN) {
+        ESP_LOGW(TAG, "unut yayinlandi — hattaki butun node'lar bakir");
+        s_adet = 0;                 /* RAM listesi de gecersiz */
+    } else {
+        ESP_LOGW(TAG, "0x%02X unut komutu gonderildi", hedef);
+    }
+
+    xSemaphoreGive(s_hat);
 }
 
 static void onay_gonder(const uint8_t *uid, uint8_t adres)
@@ -248,6 +345,8 @@ uint8_t nh_hub_tara(void)
 {
     ESP_LOGI(TAG, "tarama basliyor");
 
+    xSemaphoreTake(s_hat, portMAX_DELAY);
+
     uint8_t sessiz = 0;
     uint8_t cevap[TAMPON];
 
@@ -305,6 +404,8 @@ uint8_t nh_hub_tara(void)
     }
 
     ESP_LOGI(TAG, "tarama bitti — toplam %u node", s_adet);
+
+    xSemaphoreGive(s_hat);
     return s_adet;
 }
 
